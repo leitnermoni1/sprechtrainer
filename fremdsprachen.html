@@ -26,8 +26,6 @@
     padding-bottom:14px;margin-bottom:8px;flex-wrap:wrap}
   header.top .logo{height:54px;width:auto;flex-shrink:0}
   header.top h1{font-size:30px;margin:0;letter-spacing:-.5px;font-weight:600;color:#9a93a8}
-  .home{cursor:pointer;transition:opacity .15s}
-  .home:hover{opacity:.7}
   header.top .sub{font-family:"DejaVu Sans Mono",ui-monospace,monospace;font-size:12px;
     letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
 
@@ -144,9 +142,9 @@
 <div class="wrap">
 
   <header class="top">
-    <img src="https://www.muehlbach.schule/wp-content/uploads/sites/62/2023/11/LogoMuehlbachGruenTransparent-300x278.png" alt="SSP Mühlbach" class="logo home" id="homeLogo">
+    <img src="https://www.muehlbach.schule/wp-content/uploads/sites/62/2023/11/LogoMuehlbachGruenTransparent-300x278.png" alt="SSP Mühlbach" class="logo">
     <div>
-      <h1 class="home" id="homeTitle">Fremdsprachen</h1>
+      <h1>Fremdsprachen</h1>
       <span class="sub">parla · speak · SSP Mühlbach</span>
     </div>
   </header>
@@ -304,7 +302,7 @@
    EINSTELLUNG: Hier nach dem Einrichten die Worker-Adresse eintragen.
    Beispiel: "https://sprechtrainer.deinname.workers.dev"
    ============================================================ */
-const WORKER_URL = "";   /* <-- HIER DIE URL DES GEMINI-WORKERS EINFÜGEN (nicht der Anthropic-Worker!) */
+const WORKER_URL = "https://sprechtrainer.leitnermoni0.workers.dev/";   /* <-- HIER DIE URL DES GEMINI-WORKERS EINFÜGEN (nicht der Anthropic-Worker!) */
 
 const S = { lang:"it", topic:"", text:"", history:[], busy:false, estLevel:"A2", teacherPw:"", editing:false, suffix:"", mode:"talk", currentSentence:"", usedSentences:[], awaitNext:false };
 const LANG = {
@@ -797,14 +795,6 @@ document.getElementById("repeatBtn").addEventListener("click",()=>{
   const apps=document.querySelectorAll(".b-app");const last=apps[apps.length-1];
   if(last)speak(last.childNodes[1]?.textContent||last.textContent);
 });
-
-function goHome(){
-  try{ speechSynthesis.cancel(); }catch(e){}
-  try{ if(typeof recog!=="undefined" && recog && listening) recog.stop(); }catch(e){}
-  show("screen-role");
-}
-document.getElementById("homeLogo").addEventListener("click",goHome);
-document.getElementById("homeTitle").addEventListener("click",goHome);
 
 show("screen-role");
 </script>
