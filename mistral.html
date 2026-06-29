@@ -760,14 +760,26 @@ const voiceWarned={};
 function pickVoice(){
   if(!voices||!voices.length){ voices=speechSynthesis.getVoices(); }
   const lang=S.lang;                       // "it" / "en" / "de"
-  const loc=LANG[lang].locale.toLowerCase(); // "it-it" ...
+  const loc=LANG[lang].locale.toLowerCase(); // "en-gb" ...
   const byLang=voices.filter(v=>{
     const vl=(v.lang||"").toLowerCase().replace("_","-");
     return vl===loc || vl.startsWith(lang+"-") || vl===lang;
   });
   if(byLang.length){
-    // bevorzugt eine Stimme, deren Name nicht nach Englisch klingt; sonst die erste
-    return byLang[0];
+    // Beste Stimme auswählen: je höher die Punktzahl, desto besser.
+    const score=(v)=>{
+      const vl=(v.lang||"").toLowerCase().replace("_","-");
+      const n=(v.name||"").toLowerCase();
+      let s=0;
+      if(vl===loc) s+=5;                                  // exakt die Ziel-Variante (z. B. en-GB)
+      if(/google/.test(n)) s+=4;                          // Google-Stimmen klingen am natürlichsten
+      if(/natural|neural|online|enhanced|premium/.test(n)) s+=3;
+      if(lang==="en" && vl==="en-gb") s+=3;               // britisches Englisch bevorzugen
+      if(lang==="en" && /(uk|british|kate|sonia|libby|ryan|arthur|george)/.test(n)) s+=2;
+      if(v.localService===false) s+=1;                    // Online-Stimmen meist hochwertiger
+      return s;
+    };
+    return byLang.slice().sort((a,b)=>score(b)-score(a))[0];
   }
   // Kein Treffer über den Sprachcode -> über den Stimmennamen versuchen
   const names=VOICE_NAMES[lang]||[];
@@ -791,7 +803,11 @@ function speak(text){
     voiceWarned[S.lang]=true;
     showEl("stageErr","Hinweis: Für "+LANG[S.lang].name+" ist auf diesem Gerät keine passende Sprachstimme installiert – die Aussprache kann dadurch falsch klingen. Am zuverlässigsten funktioniert die App in Google Chrome (im eigenen Fenster, nicht eingebettet).");
   }
-  u.rate=(S.estLevel==="A1"||S.estLevel==="A2")?0.9:0.97;
+  // Sprechtempo: Englisch generell langsamer und klarer; bei niedrigem Niveau noch langsamer.
+  const langsam=(S.estLevel==="A1"||S.estLevel==="A2");
+  if(S.lang==="en"){ u.rate = langsam ? 0.75 : 0.82; }
+  else { u.rate = langsam ? 0.9 : 0.97; }
+  u.pitch=1.0;
   const mic=document.getElementById("micBtn");
   u.onstart=()=>{mic.classList.add("speaking");setStatus("Die App spricht …");};
   u.onend=()=>{mic.classList.remove("speaking");setStatus("Du bist dran – tippe auf das Mikrofon.");};
