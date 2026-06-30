@@ -749,8 +749,19 @@ function addBubbleHTML(who, label, html){
 }
 
 let voices=[];
-function loadVoices(){voices=speechSynthesis.getVoices();}
-loadVoices();if(speechSynthesis.onvoiceschanged!==undefined)speechSynthesis.onvoiceschanged=loadVoices;
+let voicesReady=false;
+function loadVoices(){
+  const v=speechSynthesis.getVoices();
+  if(v && v.length){ voices=v; voicesReady=true; }
+}
+loadVoices();
+if(speechSynthesis.onvoiceschanged!==undefined) speechSynthesis.onvoiceschanged=loadVoices;
+// Chrome lädt die guten Online-Stimmen verzögert – ein paar Mal nachfassen.
+let _vtries=0;
+const _vtimer=setInterval(()=>{
+  loadVoices(); _vtries++;
+  if(voicesReady || _vtries>20) clearInterval(_vtimer);
+}, 200);
 
 // Sprachnamen, nach denen Stimmen zusätzlich durchsucht werden (falle Code-Suche leer ist)
 const VOICE_NAMES={ it:["italian","italiano","ital"], en:["english","englisch"], de:["german","deutsch","allemand"] };
@@ -792,20 +803,30 @@ function pickVoice(){
 }
 
 function speak(text){
-  if(!text)return;speechSynthesis.cancel();
+  if(!text)return;
+  // Falls die guten Stimmen noch nicht geladen sind: kurz warten, dann sprechen.
+  // Das verhindert, dass Chrome auf die schlechte lokale Roboterstimme zurückfällt.
+  if(!voicesReady){
+    loadVoices();
+    if(!voicesReady){ setTimeout(()=>speakNow(text), 350); return; }
+  }
+  speakNow(text);
+}
+
+function speakNow(text){
+  speechSynthesis.cancel();
   const u=new SpeechSynthesisUtterance(text);
   const loc=LANG[S.lang].locale;
   u.lang=loc;                              // wichtig: gibt der Engine die Zielsprache vor
   const v=pickVoice();
   if(v){ u.voice=v; u.lang=v.lang||loc; }
   else if(!voiceWarned[S.lang]){
-    // Einmalige, dezente Warnung: es fehlt eine Stimme für diese Sprache
     voiceWarned[S.lang]=true;
     showEl("stageErr","Hinweis: Für "+LANG[S.lang].name+" ist auf diesem Gerät keine passende Sprachstimme installiert – die Aussprache kann dadurch falsch klingen. Am zuverlässigsten funktioniert die App in Google Chrome (im eigenen Fenster, nicht eingebettet).");
   }
   // Sprechtempo: Englisch generell langsamer und klarer; bei niedrigem Niveau noch langsamer.
   const langsam=(S.estLevel==="A1"||S.estLevel==="A2");
-  if(S.lang==="en"){ u.rate = langsam ? 0.75 : 0.82; }
+  if(S.lang==="en"){ u.rate = langsam ? 0.8 : 0.85; }
   else { u.rate = langsam ? 0.9 : 0.97; }
   u.pitch=1.0;
   const mic=document.getElementById("micBtn");
